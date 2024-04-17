@@ -1,31 +1,35 @@
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.Window
 
 object SimpleApp extends App {
-    val logFile = "./data/testing.txt" // Should be some file on your system
-    val spark = SparkSession.builder.appName("Simple Application").master("local[*]").getOrCreate()
-    var logData = spark.read.textFile(logFile).cache()
+  val spark = SparkSession.builder.appName("Simple Application").master("local[*]").getOrCreate()
+  import spark.implicits._
 
-    val nbLignes = logData.count()
+  // Load the text file into a DataFrame
+  val logFile = "./data/testing.txt" // Adjust the path as needed
+  val textData = spark.read.text(logFile).as[String]
 
-    // On separe les lignes en mots (String => Array[String])
-    // (Vu que logData est déjà un DataSet on peux appliquer un map directement
-    // on peut donc separer les lignes en mots en utilisant selectExpr)
-    val motsLigne = logData.selectExpr("split(line, ' ') as mots")
-    //motsLigne.show()
+  // Identify lines containing "ISBN" as new book starts and assign IDs
+  val withBookStarts = textData.withColumn("isNewBook", lower($"value").contains("isbn"))
+  val bookIds = withBookStarts.withColumn("bookId", sum(when($"isNewBook", 1).otherwise(0)).over(Window.orderBy(monotonically_increasing_id())))
 
-    // Puis on explode les Arrays des mots pour avoir un Array avec tous les mots du texte
-    // et on fais juste le count de cet array.
-    val nbMots = motsLigne.selectExpr("explode(mots) as mot").count()
+  // Filter out the ISBN lines if you want only content, adjust as needed
+  val cleanedData = bookIds.filter(!$"isNewBook")
 
-    // Calcul de la moyenne de mots par ligne
-    val moyMots = nbMots/nbLignes
+  // Group by 'bookId' and aggregate contents
+  val books = cleanedData.groupBy($"bookId").agg(collect_list($"value").as("content"))
 
-    // val numAs = logData.filter(line => line.contains("a")).count()
-    // val numBs = logData.filter(line => line.contains("b")).count()
-    //println(s"Lines with a: $numAs, Lines with b: $numBs")
+  // Convert the aggregated content into a single string per book and assign IDs
+  val finalBooks = books.withColumn("id", monotonically_increasing_id())
+                        .withColumn("content", concat_ws(" ", $"content"))
+                        .select("id", "content") // Select only the necessary columns
 
-    println(s"Il y a $nbLignes Lignes dans le texte")
-    println(s"Il y a $nbMots Mots dans le texte")
-    println(s"Il y a en moyenne $moyMots Mots par Ligne dans le texte")
-    spark.stop()
+  // Show results
+  finalBooks.show(true)
+
+  // Convert to Dataset of a case class if needed for better type safety
+  finalBooks.as[(Long, String)].show(true)
+
+  spark.stop()
 }
