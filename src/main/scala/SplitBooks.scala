@@ -2,6 +2,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
 import Nettoyage.ClearData
+import Visualisation.plotHistogram
 
 object SimpleApp extends App {
   val spark = SparkSession.builder.appName("Simple Application").master("local[*]").getOrCreate()
@@ -13,6 +14,8 @@ object SimpleApp extends App {
   // Identify lines containing "ISBN" as new book starts and assign IDs
   val withBookStarts = cleanedData.withColumn("isNewBook", lower($"clean_value").contains("isbn"))
   val bookIds = withBookStarts.withColumn("bookId", sum(when($"isNewBook", 1).otherwise(0)).over(Window.orderBy(monotonically_increasing_id())))
+  bookIds.printSchema()
+  bookIds.show()
 
   // Filter out the ISBN lines if you want only content, adjust as needed
   val contentData = bookIds.filter(!$"isNewBook")
@@ -21,7 +24,7 @@ object SimpleApp extends App {
   val books = contentData.groupBy($"bookId").agg(collect_list($"clean_value").as("content"))
 
   // DF pour conter les lignes par livres (elles seront supprimées dans l'étape suivante)
-  val analysisArray = cleanedData.groupBy($"bookId").agg(count("*").as("lines"))
+  val analysisArray = contentData.groupBy($"bookId").agg(count("*").as("lines"))
 
   // Convert the aggregated content into a single string per book and assign IDs
   val finalBooks = books.withColumn("id", monotonically_increasing_id())
@@ -29,7 +32,7 @@ object SimpleApp extends App {
                         .select("id", "content") // Select only the necessary columns
 
   // Show results
-  finalBooks.show(true)
+  // finalBooks.show(true)
 
   // Convert to Dataset of a case class if needed for better type safety
   finalBooks.as[(Long, String)].show(true)
@@ -41,11 +44,11 @@ object SimpleApp extends App {
   val finalBooksMots = finalBooks.withColumn("mots", size(split(col("content"), "\\s+")))
 
   val joinedDF = finalBooksMots.join(analysisArray, finalBooksMots("id") === analysisArray("bookId"), "left")
-  joinedDF.show()
+  // joinedDF.show()
 
   val finalAnalysis = joinedDF.withColumn("Mots/Ligne", $"mots"/$"lines")
                       .select("id", "mots", "lines", "Mots/Ligne")
-  finalAnalysis.show()
+  // finalAnalysis.show()
   // On separe les lignes en mots (String => Array[String])
   // (Vu que logData est déjà un DataSet on peux appliquer un map directement
   // on peut donc separer les lignes en mots en utilisant selectExpr)
@@ -64,12 +67,26 @@ object SimpleApp extends App {
   val aName = allMots.selectExpr("length(mot) as lg")
   val lignes = aName.orderBy("lg").select("lg").collect()
   val medMots = lignes((nbMots/2).toInt)
-  
+  // cleanedData.printSchema()
+  // bookIds.printSchema()
+  // finalBooks.printSchema()
+
   //println(s"Il y a $nbLignes Lignes dans le texte")
   println(s"Il y a $nbMots Mots dans le texte")
   println(s"Il y a $nbLignes Lignes dans le texte")
   println(s"Il y a en moyenne $moyMots Mots par Ligne dans le texte")
   println(s"Il y a en mediane $medMots Mots par Ligne dans le texte")
+
+  // Choisissez le DataFrame et la colonne pour la visualisation
+  val columnToPlot = "Mots/Ligne"
+
+  // Création de l'histogramme
+  val histogram = Visualisation.plotHistogram(spark, finalAnalysis, columnToPlot, "Histogramme de Mots par Ligne")
+
+  // Sauvegarde de l'histogramme en tant qu'image
+  histogram.saveas("histogram_mots_par_ligne.png")
+
+
 
   spark.stop()
 }

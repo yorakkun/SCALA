@@ -14,5 +14,5 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % 
 libraryDependencies += sparkcore
 libraryDependencies += sparksql
 libraryDependencies +=  hadoopclient
-
+libraryDependencies ++= Seq("org.scalanlp" %% "breeze" % "1.2", "org.scalanlp" %% "breeze-viz" % "1.2")
 fork := true
