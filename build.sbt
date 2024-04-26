@@ -15,4 +15,5 @@ libraryDependencies += sparkcore
 libraryDependencies += sparksql
 libraryDependencies +=  hadoopclient
 libraryDependencies ++= Seq("org.scalanlp" %% "breeze" % "1.2", "org.scalanlp" %% "breeze-viz" % "1.2")
+libraryDependencies += "org.apache.spark" %% "spark-mllib" % "3.3.0"
 fork := true

@@ -42,4 +42,22 @@ object Visualisation {
     p.title = title
     f
   }
+  // def plotBarChartForTopics(dataFrame: DataFrame, spark: SparkSession): Unit = {
+  // import spark.implicits._
+
+  // val topicsData = dataFrame.select($"topic", explode($"termIndices").alias("term"), explode($"termWeights").alias("weight"))
+  // val words = Array("word1", "word2", "word3", "word4", "word5") // Assume we have a mapping of indices to words
+
+  // val plotData = topicsData.map { case Row(topic: Int, term: Int, weight: Double) =>
+  //   (topic, words(term), weight)
+  // }.toDF("topic", "word", "weight")
+
+  // Vegas("Topic Modeling Visualization")
+  //   .withDataFrame(plotData)
+  //   .mark(Bar)
+  //   .encodeX("word", Ordinal, scale=Scale(bandSize=20))
+  //   .encodeY("weight", Quantitative)
+  //   .encodeColor(field="topic", dataType=Nominal)
+  //   .show
+  // }
 }

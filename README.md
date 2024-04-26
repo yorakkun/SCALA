@@ -39,5 +39,11 @@ Fonctionnalités :
 
 ![](screens/booksStats.png "Optional title")
 
+## Résultats
+
+![](screens/histogram_mots_par_ligne.png "Optional title")
+![](screens/scatter_chart_mots_contre_lignes.png "Optional title")
+![](screens/bar_chart_mots_par_livre.png "Optional title")
+
 ## Avertissement
 Assurez-vous d'avoir suffisamment de ressources disponibles sur votre machine pour exécuter les analyses, car Apache Spark peut consommer beaucoup de mémoire et de puissance de calcul.

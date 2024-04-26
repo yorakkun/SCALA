@@ -1,6 +1,7 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
+import org.apache.spark.ml.feature.Tokenizer
 import Nettoyage.ClearData
 import Visualisation.plotHistogram
 import Visualisation.plotBarChart
@@ -77,5 +78,15 @@ object SimpleApp extends App {
   val scatterChart = plotScatterChart(spark, finalAnalysis, "mots", "lines", "Scatter Chart Mots contre Lignes")
   scatterChart.saveas("scatter_chart_mots_contre_lignes.png")
   
+  // TOPIC MODELING EN COURS
+  val tokenizer = new Tokenizer().setInputCol("content").setOutputCol("tokens")
+  val tokenizedData = tokenizer.transform(finalBooks)
+
+  TopicModeling.performLDA(spark, tokenizedData)
+
+  // // Après avoir exécuté LDA
+  // val topics: DataFrame = ldaModel.describeTopics(5) // Avec l'appel existant
+  // Visualization.plotBarChartForTopics(topics, spark)
+
   spark.stop()
 }
