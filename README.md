@@ -6,8 +6,13 @@ Il faudra aussi avoir sbt d'installer.
 
 ## Utilisation
 
-Pour lancer le projet utiliser la commande à la racine du projet git:
+Il faut créer un dossier "data" dans la racine du projet et rajouter le fichier "testing.txt" dans celui-ci.
 
+On utilise cet extrait des fichiers originels pour réduire le temps d'éxecution du code or vous pouvez remplacer le "testing.txt" par les vrais fichiers en changeant le nom de la variable ```logFile = "./data/testing.txt"``` dans le fichier source "Nettoyage.Scala".
+
+![](screens/howtodata.png "Ajout Data")
+
+Pour lancer le projet utiliser la commande à la racine du projet git:
 ```bash
 sbt run -java-home $JAVA_HOME
 ou alors  
