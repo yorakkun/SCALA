@@ -1,10 +1,4 @@
-# Template pour un projet scala + spark + sbt
-
-## Introduction
-
-Ce template a été créé en utilisant la version 11 de java.
-
-## Prérequis
+# Prérequis
 
 Pour l'utiliser, assurez vous d'avoir `java11` installé et la variable d'environnement `JAVA_HOME` définie vers le dossier ou java11 est présent.
 
@@ -17,6 +11,17 @@ Pour lancer le projet utiliser la commande:
 ```bash
 sbt run -java-home $JAVA_HOME
 ```
+
+## Introduction
+
+Pourquoi avoir choisi Spark Scala pour ce projet :
+
+1. **Traitement de données massives** : Apache Spark est spécialement conçu pour le traitement efficace de grands ensembles de données répartis sur un cluster. Étant donné que nous travaillons avec des données de livres qui pourraient potentiellement être volumineuses, Spark offre des capacités de traitement parallèle qui permettent de traiter ces données de manière rapide et efficace.
+
+2. **Traitement distribué** : Scala est bien adapté pour exploiter les fonctionnalités de Spark, notamment son API RDD (Resilient Distributed Dataset) qui permet de manipuler des données distribuées de manière transparente. Cela nous permet d'exploiter les capacités de calcul distribué de Spark pour des analyses efficaces, même sur de grandes quantités de données.
+
+En résumé, Spark Scala est un choix approprié pour ce projet en raison de sa capacité à gérer efficacement de grandes quantités de données distribuée et sa performance globale.
+
 
 Ce programme Scala utilise Apache Spark pour effectuer diverses analyses de texte, telles que le comptage de mots par ligne et la détermination de la moyenne et de la
 médiane des mots par ligne dans un ensemble de données de livres.
