@@ -3,6 +3,8 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
 import Nettoyage.ClearData
 import Visualisation.plotHistogram
+import Visualisation.plotBarChart
+import Visualisation.plotScatterChart
 
 object SimpleApp extends App {
   val spark = SparkSession.builder.appName("Simple Application").master("local[*]").getOrCreate()
@@ -14,8 +16,6 @@ object SimpleApp extends App {
   // Identify lines containing "ISBN" as new book starts and assign IDs
   val withBookStarts = cleanedData.withColumn("isNewBook", lower($"clean_value").contains("isbn"))
   val bookIds = withBookStarts.withColumn("bookId", sum(when($"isNewBook", 1).otherwise(0)).over(Window.orderBy(monotonically_increasing_id())))
-  bookIds.printSchema()
-  bookIds.show()
 
   // Filter out the ISBN lines if you want only content, adjust as needed
   val contentData = bookIds.filter(!$"isNewBook")
@@ -31,9 +31,6 @@ object SimpleApp extends App {
                         .withColumn("content", concat_ws(" ", $"content"))
                         .select("id", "content") // Select only the necessary columns
 
-  // Show results
-  // finalBooks.show(true)
-
   // Convert to Dataset of a case class if needed for better type safety
   finalBooks.as[(Long, String)].show(true)
 
@@ -44,20 +41,14 @@ object SimpleApp extends App {
   val finalBooksMots = finalBooks.withColumn("mots", size(split(col("content"), "\\s+")))
 
   val joinedDF = finalBooksMots.join(analysisArray, finalBooksMots("id") === analysisArray("bookId"), "left")
-  // joinedDF.show()
 
   val finalAnalysis = joinedDF.withColumn("Mots/Ligne", $"mots"/$"lines")
                       .select("id", "mots", "lines", "Mots/Ligne")
-  // finalAnalysis.show()
-  // On separe les lignes en mots (String => Array[String])
-  // (Vu que logData est déjà un DataSet on peux appliquer un map directement
-  // on peut donc separer les lignes en mots en utilisant selectExpr)
+
   val motsLigne = finalBooks.selectExpr("split(content, ' ') as mots")
 
-  // Puis on explode les Arrays des mots pour avoir un Array avec tous les mots du texte
-  // et on fais juste le count de cet array.
   val allMots = motsLigne.selectExpr("explode(mots) as mot")
-  //allMots.show()
+
   val nbMots = allMots.count()
 
   // Calcul de la moyenne de mots par ligne
@@ -67,26 +58,24 @@ object SimpleApp extends App {
   val aName = allMots.selectExpr("length(mot) as lg")
   val lignes = aName.orderBy("lg").select("lg").collect()
   val medMots = lignes((nbMots/2).toInt)
-  // cleanedData.printSchema()
-  // bookIds.printSchema()
-  // finalBooks.printSchema()
 
-  //println(s"Il y a $nbLignes Lignes dans le texte")
+  println(s"Il y a $nbLignes Lignes dans le texte")
   println(s"Il y a $nbMots Mots dans le texte")
   println(s"Il y a $nbLignes Lignes dans le texte")
   println(s"Il y a en moyenne $moyMots Mots par Ligne dans le texte")
   println(s"Il y a en mediane $medMots Mots par Ligne dans le texte")
 
-  // Choisissez le DataFrame et la colonne pour la visualisation
-  val columnToPlot = "Mots/Ligne"
-
-  // Création de l'histogramme
-  val histogram = Visualisation.plotHistogram(spark, finalAnalysis, columnToPlot, "Histogramme de Mots par Ligne")
-
-  // Sauvegarde de l'histogramme en tant qu'image
+  // Histogramme des mots par ligne
+  val histogram = plotHistogram(spark, finalAnalysis, "Mots/Ligne", "Histogramme de Mots par Ligne")
   histogram.saveas("histogram_mots_par_ligne.png")
 
+  // Graphique à barres du nombre de mots par livre
+  val barChart = plotBarChart(spark, finalAnalysis, "id", "mots", "Bar Chart de Mots par Livre")
+  barChart.saveas("bar_chart_mots_par_livre.png")
 
-
+  // Graphique de dispersion du nombre de mots contre lignes
+  val scatterChart = plotScatterChart(spark, finalAnalysis, "mots", "lines", "Scatter Chart Mots contre Lignes")
+  scatterChart.saveas("scatter_chart_mots_contre_lignes.png")
+  
   spark.stop()
 }
